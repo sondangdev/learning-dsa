@@ -3,6 +3,7 @@ import sys
 import getpass
 from account import Account
 from authorization import Authorization
+import pdb
 
 class Operation:
     def __init__(self):
@@ -48,11 +49,12 @@ class Operation:
         self.authorized = True
 
     def operation_prompt(self):
-        print "Please choose a number (1 - 4) to select one of the operation below:"
+        print "Please choose a number (1 - 5) to select one of the operation below:"
         print "  ( 1 ) Close your bank account"
         print "  ( 2 ) Withdraw from your bank account"
-        print "  ( 3 ) Deposit into another bank account"
-        print "  ( 4 ) Exit"
+        print "  ( 3 ) Deposit into your bank account"
+        print "  ( 4 ) Transfer to another bank account"
+        print "  ( 5 ) Exit"
 
     def select_operation(self):
         self.operation_prompt()
@@ -67,6 +69,8 @@ class Operation:
         elif response == '3':
             self.deposit()
         elif response == '4':
+            self.transfer()
+        elif response == '5':
             print "Thank you for using our service."
             sys.exit()
         else:
@@ -103,7 +107,10 @@ class Operation:
             self.authorize()
 
     def deposit(self):
-        account_id = raw_input("Please enter account id you want to deposit into: ").lower()
+        if self.authorized == True:
+            account_id = self.account_id
+        else:
+            account_id = raw_input("Please enter account id you want to deposit into: ").lower()
         authorization = Authorization(account_id, "")
         if authorization.check_account_id() == True:
             amt = input("How much do you want to deposit: $")
@@ -139,6 +146,29 @@ class Operation:
         amt = -amt
         Account().update(self.account_id, amt)
         self.select_operation()
+
+    def transfer(self):
+        self.is_authorized()
+        transferred_id = raw_input("Please enter account id you want to transfer to: ").lower()
+        authorization = Authorization(transferred_id, "")
+        if authorization.check_account_id() == True:
+            amt = input("How much do you want to transfer: $")
+            while (
+                isinstance(amt, int) == False
+                and isinstance(amt, float) == False
+                and (amt < 0)
+                ):
+                amt = float(raw_input("How much do you want to deposit: $"))
+                print "You must enter a positive number. Please try again"
+                self.allow_cancel()
+            print "You have transferred ${} to account {}".format(amt, transferred_id)
+            Account().update(transferred_id, amt)
+            Account().update(self.account_id, -amt)
+            self.select_operation()
+        else:
+            print "Account id does not exist. Please retry."
+            self.allow_cancel()
+            self.transfer()
 
     def allow_cancel(self):
         print("Do you want to continue (y/n):" )
